@@ -1,6 +1,29 @@
 {
   "barang": [
-    {"nama": "Item A", "stok": 10, "gambar": "https://via.placeholder.com/150?text=Item+A"},
-    {"nama": "Item B", "stok": 5, "gambar": "https://via.placeholder.com/150?text=Item+B"}
+    {
+      "nama": "Jamu Kunyit Asam",
+      "stok": 12,
+      "gambar": "https://d1vbn70lmn1nqe.cloudfront.net/prod/wp-content/uploads/2022/08/25045134/X-Jamu-Tradisional-Indonesia-dengan-Segudang-Manfaat.jpg"
+    },
+    {
+      "nama": "Kopi Luwak",
+      "stok": 8,
+      "gambar": "https://upload.wikimedia.org/wikipedia/commons/3/32/Kopi_luwak_cup.jpg"
+    },
+    {
+      "nama": "Teh Hijau Organik",
+      "stok": 20,
+      "gambar": "https://upload.wikimedia.org/wikipedia/commons/4/41/Green_tea_leaves.jpg"
+    },
+    {
+      "nama": "Madu Hutan",
+      "stok": 15,
+      "gambar": "https://upload.wikimedia.org/wikipedia/commons/5/55/Honey_in_jar.jpg"
+    },
+    {
+      "nama": "Jahe Merah",
+      "stok": 18,
+      "gambar": "https://upload.wikimedia.org/wikipedia/commons/8/89/Red_ginger_roots.jpg"
+    }
   ]
 }

@@ -39,7 +39,9 @@ show_menu() {
     echo
     echo "=== MENU ADMIN ==="
     echo "[1] Tampilkan barang"
-    echo "[2] Update stok/nama/gambar"
+    echo "[2] Tambah stok barang"
+    echo "[3] Kurangi/hapus stok barang"
+    echo "[4] Edit nama/gambar/stok"
     echo "[0] Keluar"
     echo
 }
@@ -48,6 +50,34 @@ display_items() {
     echo
     jq -r '.barang[] | "\(.nama) | Stok: \(.stok) | Gambar: \(.gambar)"' "$DATA_FILE"
     echo
+}
+
+add_stock() {
+    echo
+    jq -r '.barang | to_entries[] | "\(.key): \(.value.nama) | Stok: \(.value.stok)"' "$DATA_FILE"
+    read -p "Pilih nomor barang untuk ditambah stok: " idx
+    ITEM=$(jq -r ".barang[$idx]" "$DATA_FILE")
+    if [ "$ITEM" == "null" ]; then
+        echo "[!] Index tidak valid"
+        return
+    fi
+    read -p "Jumlah stok yang ditambahkan: " QTY
+    jq ".barang[$idx].stok += $QTY" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
+    echo "[*] Stok berhasil ditambah!"
+}
+
+reduce_stock() {
+    echo
+    jq -r '.barang | to_entries[] | "\(.key): \(.value.nama) | Stok: \(.value.stok)"' "$DATA_FILE"
+    read -p "Pilih nomor barang untuk dikurangi/hapus stok: " idx
+    ITEM=$(jq -r ".barang[$idx]" "$DATA_FILE")
+    if [ "$ITEM" == "null" ]; then
+        echo "[!] Index tidak valid"
+        return
+    fi
+    read -p "Jumlah stok yang dikurangi: " QTY
+    jq ".barang[$idx].stok -= $QTY | if .barang[$idx].stok < 0 then .barang[$idx].stok = 0 else . end" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
+    echo "[*] Stok berhasil dikurangi!"
 }
 
 update_item() {
@@ -79,7 +109,9 @@ while true; do
     read -p "Pilihan: " OPT
     case $OPT in
         1) display_items ;;
-        2) update_item ;;
+        2) add_stock ;;
+        3) reduce_stock ;;
+        4) update_item ;;
         0) echo "Keluar..."; ctrl_c ;;
         *) echo "[!] Pilihan tidak valid" ;;
     esac
