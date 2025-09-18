@@ -3,16 +3,19 @@
 DATA_FILE="data.json"
 USERS_FILE="users_log.json"
 
-# Pastikan file ada
+# ====== Pastikan file ada ======
 [ ! -f "$DATA_FILE" ] && echo '{"barang":[]}' > "$DATA_FILE"
 [ ! -f "$USERS_FILE" ] && echo '{"users":[]}' > "$USERS_FILE"
 
 trap ctrl_c INT
 ctrl_c() {
     echo -e "\n[!] Keluar..."
+    pkill -f php >/dev/null 2>&1
+    pkill -f ssh >/dev/null 2>&1
     exit 0
 }
 
+# ====== Banner ======
 banner() {
     clear
     echo "==============================="
@@ -21,6 +24,25 @@ banner() {
     echo
 }
 
+# ====== Start PHP & Serveo ======
+start_php_serveo() {
+    fuser -k 3333/tcp >/dev/null 2>&1
+    php -S localhost:3333 >/dev/null 2>&1 &
+    sleep 2
+    echo "[*] PHP server berjalan di localhost:3333"
+
+    [[ -f sendlink ]] && rm sendlink
+    ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -R 80:localhost:3333 serveo.net 2>/dev/null > sendlink &
+    sleep 8
+    LINK=$(grep -o "https://[0-9a-z]*\.serveo.net" sendlink)
+    if [[ -n "$LINK" ]]; then
+        echo "[+] Serveo Link: $LINK"
+    else
+        echo "[!] Gagal mendapatkan Serveo link"
+    fi
+}
+
+# ====== Menu ======
 show_menu() {
     echo
     echo "=== MENU ADMIN ==="
@@ -107,8 +129,10 @@ hapus_user() {
     echo "[*] User berhasil dihapus!"
 }
 
-# ====== Loop Menu ======
+# ====== Mulai Program ======
 banner
+start_php_serveo
+
 while true; do
     show_menu
     read -p "Pilihan: " OPT
@@ -121,7 +145,7 @@ while true; do
         6) tambah_user ;;
         7) edit_user ;;
         8) hapus_user ;;
-        0) echo "Keluar..."; exit 0 ;;
+        0) echo "Keluar..."; pkill -f php >/dev/null 2>&1; pkill -f ssh >/dev/null 2>&1; exit 0 ;;
         *) echo "[!] Pilihan tidak valid" ;;
     esac
 done
