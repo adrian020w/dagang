@@ -1,0 +1,19 @@
+{
+  "users": [
+    {
+      "email": "user1@example.com",
+      "password": "password123",
+      "last_login": ""
+    },
+    {
+      "email": "user2@example.com",
+      "password": "qwerty",
+      "last_login": ""
+    },
+    {
+      "email": "user3@example.com",
+      "password": "abc123",
+      "last_login": ""
+    }
+  ]
+}

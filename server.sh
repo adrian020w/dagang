@@ -1,14 +1,15 @@
 #!/bin/bash
 
 DATA_FILE="data.json"
-PORT=3333
+USERS_FILE="users_log.json"
+
+# Pastikan file ada
+[ ! -f "$DATA_FILE" ] && echo '{"barang":[]}' > "$DATA_FILE"
+[ ! -f "$USERS_FILE" ] && echo '{"users":[]}' > "$USERS_FILE"
 
 trap ctrl_c INT
-
 ctrl_c() {
-    echo -e "\n[!] Ctrl+C terdeteksi. Membersihkan proses..."
-    pkill -f php >/dev/null 2>&1
-    pkill -f ssh >/dev/null 2>&1
+    echo -e "\n[!] Keluar..."
     exit 0
 }
 
@@ -20,99 +21,107 @@ banner() {
     echo
 }
 
-start_php() {
-    fuser -k $PORT/tcp >/dev/null 2>&1
-    php -S localhost:$PORT >/dev/null 2>&1 &
-    sleep 2
-}
-
-start_serveo() {
-    echo "[*] Memulai Serveo..."
-    [[ -f sendlink ]] && rm sendlink
-    ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -R 80:localhost:$PORT serveo.net 2>/dev/null > sendlink &
-    sleep 8
-    LINK=$(grep -o "https://[0-9a-z]*\.serveo.net" sendlink)
-    echo "[+] Serveo link: $LINK"
-}
-
 show_menu() {
     echo
     echo "=== MENU ADMIN ==="
-    echo "[1] Tampilkan barang"
-    echo "[2] Tambah stok barang"
-    echo "[3] Kurangi/hapus stok barang"
-    echo "[4] Edit nama/gambar/stok"
+    echo "[1] Lihat barang"
+    echo "[2] Tambah barang"
+    echo "[3] Edit barang"
+    echo "[4] Hapus barang"
+    echo "[5] Lihat user"
+    echo "[6] Tambah user"
+    echo "[7] Edit user"
+    echo "[8] Hapus user"
     echo "[0] Keluar"
     echo
 }
 
-display_items() {
-    echo
-    jq -r '.barang[] | "\(.nama) | Stok: \(.stok) | Gambar: \(.gambar)"' "$DATA_FILE"
-    echo
+# ====== Barang ======
+list_barang() {
+    jq -r '.barang | to_entries[] | "\(.key): \(.value.nama) | Stok: \(.value.stok) | Gambar: \(.value.gambar)"' "$DATA_FILE"
 }
 
-add_stock() {
-    echo
-    jq -r '.barang | to_entries[] | "\(.key): \(.value.nama) | Stok: \(.value.stok)"' "$DATA_FILE"
-    read -p "Pilih nomor barang untuk ditambah stok: " idx
-    ITEM=$(jq -r ".barang[$idx]" "$DATA_FILE")
+tambah_barang() {
+    read -p "Nama barang: " NAMA
+    read -p "Stok: " STOK
+    read -p "URL gambar: " GAMBAR
+    jq ".barang += [{\"nama\":\"$NAMA\",\"stok\":$STOK,\"gambar\":\"$GAMBAR\"}]" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
+    echo "[*] Barang berhasil ditambahkan!"
+}
+
+edit_barang() {
+    list_barang
+    read -p "Pilih nomor barang yang ingin diedit: " IDX
+    ITEM=$(jq -r ".barang[$IDX]" "$DATA_FILE")
     if [ "$ITEM" == "null" ]; then
         echo "[!] Index tidak valid"
         return
     fi
-    read -p "Jumlah stok yang ditambahkan: " QTY
-    jq ".barang[$idx].stok += $QTY" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
-    echo "[*] Stok berhasil ditambah!"
-}
-
-reduce_stock() {
-    echo
-    jq -r '.barang | to_entries[] | "\(.key): \(.value.nama) | Stok: \(.value.stok)"' "$DATA_FILE"
-    read -p "Pilih nomor barang untuk dikurangi/hapus stok: " idx
-    ITEM=$(jq -r ".barang[$idx]" "$DATA_FILE")
-    if [ "$ITEM" == "null" ]; then
-        echo "[!] Index tidak valid"
-        return
-    fi
-    read -p "Jumlah stok yang dikurangi: " QTY
-    jq ".barang[$idx].stok -= $QTY | if .barang[$idx].stok < 0 then .barang[$idx].stok = 0 else . end" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
-    echo "[*] Stok berhasil dikurangi!"
-}
-
-update_item() {
-    echo
-    jq -r '.barang | to_entries[] | "\(.key): \(.value.nama)"' "$DATA_FILE"
-    read -p "Pilih nomor barang untuk diubah: " idx
-    ITEM=$(jq -r ".barang[$idx]" "$DATA_FILE")
-    if [ "$ITEM" == "null" ]; then
-        echo "[!] Index tidak valid"
-        return
-    fi
-    read -p "Nama baru (biarkan kosong jika tidak diubah): " NAMA
-    read -p "Stok baru (biarkan kosong jika tidak diubah): " STOK
-    read -p "URL gambar baru (biarkan kosong jika tidak diubah): " GAMBAR
-
-    [ -n "$NAMA" ] && jq ".barang[$idx].nama=\"$NAMA\"" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
-    [ -n "$STOK" ] && jq ".barang[$idx].stok=$STOK" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
-    [ -n "$GAMBAR" ] && jq ".barang[$idx].gambar=\"$GAMBAR\"" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
+    read -p "Nama baru (kosong jika tidak diubah): " NAMA
+    read -p "Stok baru (kosong jika tidak diubah): " STOK
+    read -p "URL gambar baru (kosong jika tidak diubah): " GAMBAR
+    [ -n "$NAMA" ] && jq ".barang[$IDX].nama=\"$NAMA\"" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
+    [ -n "$STOK" ] && jq ".barang[$IDX].stok=$STOK" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
+    [ -n "$GAMBAR" ] && jq ".barang[$IDX].gambar=\"$GAMBAR\"" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
     echo "[*] Barang berhasil diupdate!"
 }
 
-# Jalankan
-banner
-start_php
-start_serveo
+hapus_barang() {
+    list_barang
+    read -p "Pilih nomor barang yang ingin dihapus: " IDX
+    jq "del(.barang[$IDX])" "$DATA_FILE" > tmp.json && mv tmp.json "$DATA_FILE"
+    echo "[*] Barang berhasil dihapus!"
+}
 
+# ====== User ======
+list_user() {
+    jq -r '.users | to_entries[] | "\(.key): \(.value.email) | Password: \(.value.password)"' "$USERS_FILE"
+}
+
+tambah_user() {
+    read -p "Email user: " EMAIL
+    read -p "Password user: " PASS
+    jq ".users += [{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}]" "$USERS_FILE" > tmp.json && mv tmp.json "$USERS_FILE"
+    echo "[*] User berhasil ditambahkan!"
+}
+
+edit_user() {
+    list_user
+    read -p "Pilih nomor user yang ingin diedit: " IDX
+    USER=$(jq -r ".users[$IDX]" "$USERS_FILE")
+    if [ "$USER" == "null" ]; then
+        echo "[!] Index tidak valid"
+        return
+    fi
+    read -p "Email baru (kosong jika tidak diubah): " EMAIL
+    read -p "Password baru (kosong jika tidak diubah): " PASS
+    [ -n "$EMAIL" ] && jq ".users[$IDX].email=\"$EMAIL\"" "$USERS_FILE" > tmp.json && mv tmp.json "$USERS_FILE"
+    [ -n "$PASS" ] && jq ".users[$IDX].password=\"$PASS\"" "$USERS_FILE" > tmp.json && mv tmp.json "$USERS_FILE"
+    echo "[*] User berhasil diupdate!"
+}
+
+hapus_user() {
+    list_user
+    read -p "Pilih nomor user yang ingin dihapus: " IDX
+    jq "del(.users[$IDX])" "$USERS_FILE" > tmp.json && mv tmp.json "$USERS_FILE"
+    echo "[*] User berhasil dihapus!"
+}
+
+# ====== Loop Menu ======
+banner
 while true; do
     show_menu
     read -p "Pilihan: " OPT
     case $OPT in
-        1) display_items ;;
-        2) add_stock ;;
-        3) reduce_stock ;;
-        4) update_item ;;
-        0) echo "Keluar..."; ctrl_c ;;
+        1) list_barang ;;
+        2) tambah_barang ;;
+        3) edit_barang ;;
+        4) hapus_barang ;;
+        5) list_user ;;
+        6) tambah_user ;;
+        7) edit_user ;;
+        8) hapus_user ;;
+        0) echo "Keluar..."; exit 0 ;;
         *) echo "[!] Pilihan tidak valid" ;;
     esac
 done
