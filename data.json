@@ -1,14 +1,6 @@
 {
-    "produk": [
-        {
-            "nama": "Kopi Arabika",
-            "stok": 20,
-            "harga": 25000
-        },
-        {
-            "nama": "Teh Hijau",
-            "stok": 15,
-            "harga": 20000
-        }
-    ]
+  "barang": [
+    {"nama": "Item A", "stok": 10, "gambar": "https://via.placeholder.com/150?text=Item+A"},
+    {"nama": "Item B", "stok": 5, "gambar": "https://via.placeholder.com/150?text=Item+B"}
+  ]
 }
