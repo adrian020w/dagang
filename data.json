@@ -1,0 +1,14 @@
+{
+    "produk": [
+        {
+            "nama": "Kopi Arabika",
+            "stok": 20,
+            "harga": 25000
+        },
+        {
+            "nama": "Teh Hijau",
+            "stok": 15,
+            "harga": 20000
+        }
+    ]
+}
